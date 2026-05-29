@@ -1104,7 +1104,7 @@
       // ── CONFIGURATION & CLOUD STORAGE INTERFACE ──
       const SUPABASE_URL = "https://ryjvnlbucxgsiwfjhfes.supabase.co";
       const SUPABASE_KEY = "sb_publishable_dfvyxJmzsWGKWdXjLhYeVw_yHCr6tS0";
-      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
       const STORE_KEY = "pentest-t-roadmap-v3";
       let currentFilter = "all";
