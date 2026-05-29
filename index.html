@@ -1,0 +1,1550 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ROADMAP</title>
+
+    <!-- Monospace font: Fira Code for terminal aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+      /* =================================================================
+       DESIGN TOKENS — Single source of truth for all visual values
+       ================================================================= */
+      :root {
+        /* Background layers */
+        --bg-void: #020502;
+        --bg-deep: #050a05;
+        --bg-surface: #081008;
+        --bg-card: #0c160c;
+        --bg-card-h: #122212;
+
+        /* ── Hacker Green Palette ── */
+        --g-hot: #00ff33;
+        --g-mid: #00cc2c;
+        --g-dim: #00881b;
+        --g-muted: #005510;
+        --g-ghost: #002005;
+
+        /* ── Cyan Accent ── */
+        --c-hot: #00d4ff;
+        --c-mid: #00aacc;
+        --c-dim: #006888;
+        --c-ghost: #001f2a;
+
+        /* Priority Status Colors */
+        --p-high: #ff3333;
+        --p-med: #ff9900;
+        --p-low: #00ff33;
+
+        /* Text hierarchy */
+        --t-bright: #f0fff0;
+        --t-prime: #b2d4b2;
+        --t-mid: #669966;
+        --t-muted: #385938;
+        --t-ghost: #152615;
+
+        /* Border alpha variants */
+        --b-hot: rgba(0, 255, 51, 0.85);
+        --b-mid: rgba(0, 255, 51, 0.3);
+        --b-dim: rgba(0, 255, 51, 0.12);
+        --b-ghost: rgba(0, 255, 51, 0.05);
+        --b-cyan: rgba(0, 212, 255, 0.3);
+
+        /* Glow shadows */
+        --glow-hot:
+          0 0 15px rgba(0, 255, 51, 0.5), 0 0 40px rgba(0, 255, 51, 0.15);
+        --glow-mid: 0 0 10px rgba(0, 255, 51, 0.25);
+        --glow-dim: 0 0 6px rgba(0, 255, 51, 0.12);
+        --glow-cyan: 0 0 12px rgba(0, 212, 255, 0.35);
+
+        --font:
+          "Fira Code", "JetBrains Mono", "Cascadia Code", "Courier New",
+          monospace;
+        --junction-h: 88px;
+      }
+
+      /* =================================================================
+       RESET & GLOBAL BASE
+       ================================================================= */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background-color: var(--bg-void);
+        background-image:
+          linear-gradient(rgba(0, 255, 51, 0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(0, 255, 51, 0.015) 1px, transparent 1px);
+        background-size: 28px 28px;
+        color: var(--t-prime);
+        font-family: var(--font);
+        font-size: 13px;
+        line-height: 1.6;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 3px,
+          rgba(0, 0, 0, 0.08) 3px,
+          rgba(0, 0, 0, 0.08) 4px
+        );
+        pointer-events: none;
+        z-index: 9999;
+      }
+
+      .cursor::after {
+        content: "▋";
+        animation: blink 1.1s step-end infinite;
+        color: var(--g-dim);
+        font-size: 0.75em;
+        margin-left: 3px;
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+
+      /* =================================================================
+       NAVBAR & COMPLEX TOOLBAR
+       ================================================================= */
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 22px;
+        background: var(--bg-deep);
+        border-bottom: 1px solid var(--b-dim);
+        position: sticky;
+        top: 0;
+        z-index: 500;
+      }
+      .navbar-brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .brand-logo {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--g-hot);
+        letter-spacing: 0.06em;
+        text-shadow: var(--glow-hot);
+      }
+      .navbar-status {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 10px;
+        color: var(--t-mid);
+        letter-spacing: 0.1em;
+      }
+      .live-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--g-hot);
+        box-shadow: var(--glow-hot);
+        animation: livePulse 1.6s ease-in-out infinite;
+      }
+      @keyframes livePulse {
+        0%,
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.25;
+          transform: scale(0.65);
+        }
+      }
+
+      /* Enhanced Controls Toolbar */
+      .toolbar {
+        background: var(--bg-void);
+        border-bottom: 1px solid var(--b-ghost);
+        padding: 8px 22px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .filter-group,
+      .system-actions {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .filter-label {
+        font-size: 9px;
+        color: var(--t-muted);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+      .add-btn {
+        background: var(--g-ghost);
+        border: 1px solid var(--g-mid);
+        color: var(--g-hot);
+        font-family: var(--font);
+        font-size: 10px;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: all 0.12s ease;
+      }
+
+      .search-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+      }
+      .search-input {
+        background: var(--bg-surface);
+        border: 1px solid var(--b-dim);
+        color: var(--g-hot);
+        font-family: var(--font);
+        font-size: 11px;
+        padding: 4px 10px 4px 24px;
+        outline: none;
+        width: 200px;
+        transition: all 0.2s ease;
+      }
+      .search-input:focus {
+        border-color: var(--g-mid);
+        width: 260px;
+        box-shadow: var(--glow-dim);
+      }
+      .search-icon {
+        position: absolute;
+        left: 8px;
+        font-size: 10px;
+        color: var(--t-muted);
+        pointer-events: none;
+      }
+
+      .t-btn {
+        background: transparent;
+        border: 1px solid var(--b-ghost);
+        color: var(--t-mid);
+        font-family: var(--font);
+        font-size: 10px;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: all 0.12s ease;
+      }
+      .t-btn:hover,
+      .t-btn.active {
+        border-color: var(--g-mid);
+        color: var(--g-hot);
+        background: var(--g-ghost);
+      }
+      .t-btn.danger:hover {
+        border-color: var(--p-high);
+        color: #ff6666;
+        background: rgba(255, 51, 51, 0.05);
+      }
+
+      /* =================================================================
+       T-LAYOUT ARCHITECTURE
+       ================================================================= */
+      .t-layout {
+        display: grid;
+        grid-template-areas: "fundamentals" "t-junction" "vertical-paths";
+        grid-template-rows: auto auto 1fr;
+        padding: 18px;
+      }
+
+      .fundamentals {
+        grid-area: fundamentals;
+        background: var(--bg-deep);
+        border: 1px solid var(--b-dim);
+        border-top: 3px solid var(--g-hot);
+        padding: 16px 20px 20px;
+        position: relative;
+      }
+      .fundamentals::before {
+        content: "╔══";
+        position: absolute;
+        top: 5px;
+        left: 7px;
+        color: var(--t-ghost);
+        font-size: 9px;
+      }
+      .fundamentals::after {
+        content: "══╗";
+        position: absolute;
+        top: 5px;
+        right: 7px;
+        color: var(--t-ghost);
+        font-size: 9px;
+      }
+
+      .t-junction {
+        grid-area: t-junction;
+        position: relative;
+        height: var(--junction-h);
+      }
+      .j-v-top {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 48%;
+        background: linear-gradient(180deg, var(--g-hot), var(--g-mid));
+      }
+      .j-h-arm {
+        position: absolute;
+        top: 48%;
+        left: 25%;
+        right: 25%;
+        height: 2px;
+        background: var(--g-mid);
+      }
+      .j-v-left {
+        position: absolute;
+        top: 48%;
+        left: 25%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 52%;
+        background: linear-gradient(180deg, var(--g-mid), var(--g-dim));
+      }
+      .j-v-right {
+        position: absolute;
+        top: 48%;
+        left: 75%;
+        transform: translateX(-50%);
+        width: 2px;
+        height: 52%;
+        background: linear-gradient(180deg, var(--g-mid), var(--c-dim));
+        box-shadow: var(--glow-cyan);
+      }
+      .j-node {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--bg-void);
+        border: 1px solid var(--g-dim);
+        padding: 4px 13px;
+        font-size: 9px;
+        letter-spacing: 0.2em;
+        color: var(--g-dim);
+        text-transform: uppercase;
+        z-index: 2;
+      }
+      .j-lbl {
+        position: absolute;
+        bottom: 3px;
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        opacity: 0.75;
+      }
+      .j-lbl-left {
+        left: calc(25% - 55px);
+        color: var(--g-dim);
+        width: 110px;
+        text-align: center;
+      }
+      .j-lbl-right {
+        left: calc(75% - 55px);
+        color: var(--c-dim);
+        width: 110px;
+        text-align: center;
+      }
+      .j-dot {
+        position: absolute;
+        top: calc(48% - 4px);
+        width: 8px;
+        height: 8px;
+        border: 1px solid var(--g-mid);
+        background: var(--bg-void);
+        z-index: 1;
+      }
+      .j-dot-left {
+        left: calc(25% - 4px);
+      }
+      .j-dot-right {
+        left: calc(75% - 4px);
+        border-color: var(--c-mid);
+      }
+
+      .vertical-paths {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+      }
+      .path-col {
+        background: var(--bg-deep);
+        border: 1px solid var(--b-dim);
+        border-top: 2px solid var(--b-mid);
+        padding: 16px 20px 24px;
+        position: relative;
+        min-height: 420px;
+      }
+      .path-col.network {
+        border-right: 1px solid var(--b-mid);
+      }
+      .path-col.network::before {
+        content: "";
+        position: absolute;
+        top: -2px;
+        left: 0;
+        width: 45%;
+        height: 2px;
+        background: var(--g-hot);
+        box-shadow: var(--glow-hot);
+      }
+      .path-col.web {
+        border-left: none;
+        border-top-color: var(--b-cyan);
+      }
+      .path-col.web::before {
+        content: "";
+        position: absolute;
+        top: -2px;
+        right: 0;
+        width: 45%;
+        height: 2px;
+        background: var(--c-hot);
+        box-shadow: var(--glow-cyan);
+      }
+
+      .sec-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--b-ghost);
+        gap: 10px;
+      }
+      .sec-label {
+        font-size: 9px;
+        color: var(--t-muted);
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        margin-bottom: 3px;
+      }
+      .sec-title {
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+      .sec-title.green {
+        color: var(--g-hot);
+        text-shadow: var(--glow-hot);
+      }
+      .sec-title.cyan {
+        color: var(--c-hot);
+        text-shadow: var(--glow-cyan);
+      }
+      .sec-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .prog-wrap {
+        margin-bottom: 16px;
+      }
+      .prog-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 9px;
+        color: var(--t-muted);
+        text-transform: uppercase;
+        margin-bottom: 5px;
+      }
+      .prog-track {
+        height: 3px;
+        background: var(--bg-card);
+        border: 1px solid var(--b-ghost);
+        overflow: hidden;
+      }
+      .prog-fill {
+        height: 100%;
+        transition: width 0.45s ease;
+      }
+      .prog-fill.green {
+        background: linear-gradient(90deg, var(--g-muted), var(--g-hot));
+      }
+      .prog-fill.cyan {
+        background: linear-gradient(90deg, var(--c-ghost), var(--c-hot));
+      }
+
+      .cards-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      .cards-col {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      /* =================================================================
+       ADVANCED NODE CARDS
+       ================================================================= */
+      .card {
+        background: var(--bg-card);
+        border: 1px solid var(--b-ghost);
+        position: relative;
+        transition: all 0.18s ease;
+      }
+      .card:hover {
+        background: var(--bg-card-h);
+        border-color: var(--b-mid);
+      }
+      .card.green-t {
+        border-left: 3px solid var(--g-muted);
+      }
+      .card.cyan-t {
+        border-left: 3px solid var(--c-dim);
+      }
+      .card.done {
+        opacity: 0.35;
+      }
+      .card.done .card-title {
+        text-decoration: line-through;
+        color: var(--t-muted);
+      }
+
+      .card-inner {
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+      .card-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+      }
+
+      .card-chk {
+        width: 13px;
+        height: 13px;
+        border: 1px solid var(--t-muted);
+        background: transparent;
+        appearance: none;
+        -webkit-appearance: none;
+        cursor: pointer;
+        flex-shrink: 0;
+        margin-top: 3px;
+        position: relative;
+      }
+      .card-chk:checked {
+        background: var(--g-muted);
+        border-color: var(--g-mid);
+      }
+      .card-chk:checked::after {
+        content: "✓";
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 8px;
+        color: var(--g-hot);
+      }
+
+      .card-text {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-meta-line {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        margin-bottom: 3px;
+      }
+
+      /* Priority Pill */
+      .p-pill {
+        font-size: 8px;
+        font-weight: bold;
+        padding: 1px 4px;
+        border: 1px solid;
+        letter-spacing: 0.05em;
+      }
+      .p-pill.high {
+        color: var(--p-high);
+        border-color: rgba(255, 51, 51, 0.3);
+        background: rgba(255, 51, 51, 0.05);
+      }
+      .p-pill.medium {
+        color: var(--p-med);
+        border-color: rgba(255, 153, 0, 0.3);
+        background: rgba(255, 153, 0, 0.05);
+      }
+      .p-pill.low {
+        color: var(--p-low);
+        border-color: rgba(0, 255, 51, 0.3);
+        background: rgba(0, 255, 51, 0.05);
+      }
+
+      .card-title {
+        font-size: 11px;
+        font-weight: 500;
+        color: var(--t-bright);
+        word-break: break-word;
+        line-height: 1.4;
+      }
+      .card-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 10px;
+        color: var(--t-muted);
+        text-decoration: none;
+        margin-top: 4px;
+      }
+      .card-link:hover {
+        color: var(--g-hot);
+      }
+
+      /* Expandable Command/Notes Container */
+      .card-notes-preview {
+        background: rgba(0, 0, 0, 0.25);
+        border-left: 2px solid var(--t-ghost);
+        padding: 4px 6px;
+        font-size: 10px;
+        color: var(--t-mid);
+        font-family: var(--font);
+        margin-top: 5px;
+        white-space: pre-wrap;
+        word-break: break-all;
+        max-height: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      /* Actions Matrix on Hover */
+      .card-ops {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        display: flex;
+        gap: 6px;
+        opacity: 0;
+        transition: opacity 0.15s ease;
+        z-index: 10;
+      }
+      .card:hover .card-ops {
+        opacity: 1;
+      }
+      .op-btn {
+        background: var(--bg-void);
+        border: 1px solid var(--b-ghost);
+        font-size: 9px;
+        cursor: pointer;
+        padding: 2px 5px;
+        font-family: var(--font);
+        color: var(--t-mid);
+      }
+      .op-btn:hover {
+        color: var(--g-hot);
+        border-color: var(--g-mid);
+      }
+      .op-btn.md-btn:hover {
+        color: var(--c-hot);
+        border-color: var(--c-mid);
+      }
+      .op-btn.del-btn:hover {
+        color: var(--p-high);
+        border-color: rgba(255, 51, 51, 0.4);
+      }
+
+      .cards-row .card {
+        min-width: 180px;
+        max-width: 290px;
+        flex: 1;
+      }
+
+      /* =================================================================
+       MODAL WITH EXTENDED FIELDS
+       ================================================================= */
+      .modal-bg {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.85);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(3px);
+      }
+      .modal-bg.hidden {
+        display: none;
+      }
+      .modal {
+        background: var(--bg-surface);
+        border: 1px solid var(--b-mid);
+        border-top: 2px solid var(--g-hot);
+        padding: 22px;
+        width: 480px;
+        max-width: calc(100vw - 36px);
+        box-shadow:
+          var(--glow-mid),
+          0 20px 60px rgba(0, 0, 0, 0.85);
+      }
+      .modal-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--g-hot);
+        letter-spacing: 0.2em;
+        margin-bottom: 16px;
+        text-transform: uppercase;
+      }
+
+      .f-group {
+        margin-bottom: 12px;
+      }
+      .f-label {
+        display: block;
+        font-size: 9px;
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+        color: var(--t-mid);
+        margin-bottom: 5px;
+      }
+      .f-input,
+      .f-select,
+      .f-textarea {
+        width: 100%;
+        background: var(--bg-card);
+        border: 1px solid var(--b-dim);
+        border-bottom: 1px solid var(--g-muted);
+        color: var(--t-bright);
+        font-family: var(--font);
+        font-size: 11px;
+        padding: 7px 10px;
+        outline: none;
+      }
+      .f-input:focus,
+      .f-select:focus,
+      .f-textarea:focus {
+        border-bottom-color: var(--g-hot);
+        background: var(--bg-card-h);
+      }
+      .f-textarea {
+        height: 70px;
+        resize: vertical;
+      }
+      .f-select {
+        cursor: pointer;
+        color: var(--g-hot);
+      }
+      .f-select option {
+        background: var(--bg-surface);
+        color: var(--t-bright);
+      }
+      .f-input.err {
+        border-bottom-color: var(--p-high);
+        animation: shake 0.3s ease;
+      }
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        30% {
+          transform: translateX(-4px);
+        }
+        70% {
+          transform: translateX(4px);
+        }
+      }
+
+      .modal-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--b-ghost);
+      }
+      .btn {
+        font-family: var(--font);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        padding: 6px 16px;
+        cursor: pointer;
+        border: 1px solid;
+        transition: all 0.2s;
+      }
+      .btn-cancel {
+        background: transparent;
+        border-color: var(--b-dim);
+        color: var(--t-mid);
+      }
+      .btn-cancel:hover {
+        border-color: var(--b-mid);
+        color: var(--t-prime);
+      }
+      .btn-ok {
+        background: var(--g-ghost);
+        border-color: var(--g-mid);
+        color: var(--g-hot);
+      }
+      .btn-ok:hover {
+        background: var(--g-muted);
+        box-shadow: var(--glow-dim);
+      }
+
+      .badge {
+        font-size: 10px;
+        color: var(--t-muted);
+        padding: 3px 8px;
+        border: 1px solid var(--b-ghost);
+        background: var(--bg-card);
+      }
+      .empty {
+        border: 1px dashed var(--b-ghost);
+        padding: 20px 16px;
+        text-align: center;
+        color: var(--t-ghost);
+        font-size: 10px;
+        width: 100%;
+      }
+
+      @media (max-width: 720px) {
+        .vertical-paths {
+          grid-template-columns: 1fr;
+        }
+        .path-col.network {
+          border-right: 1px solid var(--b-dim);
+        }
+        .path-col.web {
+          border-top: 1px solid var(--b-dim);
+        }
+        .j-h-arm,
+        .j-v-left,
+        .j-v-right,
+        .j-dot,
+        .j-lbl {
+          display: none;
+        }
+        .j-v-top {
+          height: 100%;
+          background: linear-gradient(180deg, var(--g-hot), var(--g-dim));
+        }
+        .navbar-status .hide-mobile,
+        .toolbar .hide-mobile {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ================================================================
+       NAVBAR
+       ================================================================ -->
+    <nav class="navbar">
+      <div class="navbar-brand">
+        <span class="brand-logo">◈ Roadmap (Web & Network)</span>
+      </div>
+      <div class="navbar-status">
+        <span id="nav-overall" class="hide-mobile">0/0 SKILLS</span>
+        <span class="nav-divider hide-mobile">│</span>
+        <span id="nav-pct" class="hide-mobile">00% DONE</span>
+        <span class="nav-divider hide-mobile">│</span>
+        <span id="nav-date" class="hide-mobile">----/--/--</span>
+      </div>
+    </nav>
+
+    <!-- ================================================================
+       THE CONTROLS TOOLBAR
+       ================================================================ -->
+    <div class="toolbar">
+      <div class="filter-group">
+        <span class="filter-label">// VIEW:</span>
+        <button class="t-btn active" id="flt-all" onclick="filterMatrix('all')">
+          ALL
+        </button>
+        <button
+          class="t-btn"
+          id="flt-pending"
+          onclick="filterMatrix('pending')"
+        >
+          PENDING
+        </button>
+        <button class="t-btn" id="flt-done" onclick="filterMatrix('done')">
+          COMPLETED
+        </button>
+      </div>
+
+      <!-- Live Search Engine Box -->
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="matrix-search"
+          class="search-input"
+          placeholder="Filter nodes instantly..."
+          oninput="handleSearch(this.value)"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+
+      <div class="system-actions">
+        <button class="t-btn" onclick="exportData()">[EXPORT JSON]</button>
+        <button class="t-btn" onclick="triggerImport()">[IMPORT JSON]</button>
+        <button class="t-btn danger" onclick="resetSystem()">[RESET]</button>
+        <input
+          type="file"
+          id="import-input"
+          style="display: none"
+          accept=".json"
+          onchange="importData(event)"
+        />
+      </div>
+    </div>
+
+    <!-- ================================================================
+       MAIN T-LAYOUT
+       ================================================================ -->
+    <main class="t-layout">
+      <!-- ① HORIZONTAL BAR — FUNDAMENTALS -->
+      <section class="fundamentals" id="sec-fundamentals">
+        <div class="sec-head">
+          <div class="sec-meta">
+            <div class="sec-title green cursor">CORE FUNDAMENTALS</div>
+          </div>
+          <div class="sec-actions">
+            <div class="badge" id="bdg-fund">0 / 0</div>
+            <button class="add-btn" onclick="openModal('fundamentals')">
+              + ADD SKILL
+            </button>
+          </div>
+        </div>
+
+        <div class="prog-wrap">
+          <div class="prog-meta">
+            <span>COMPLETION_RATE</span><span id="pct-fund">0%</span>
+          </div>
+          <div class="prog-track">
+            <div class="prog-fill green" id="bar-fund" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="cards-row" id="cards-fund" aria-live="polite"></div>
+      </section>
+
+      <!-- ② T-JUNCTION MECHANISM -->
+      <div class="t-junction" aria-hidden="true">
+        <div class="j-v-top"></div>
+        <div class="j-h-arm"></div>
+        <div class="j-v-left"></div>
+        <div class="j-v-right"></div>
+        <div class="j-dot j-dot-left"></div>
+        <div class="j-dot j-dot-right"></div>
+      </div>
+
+      <!-- ③ VERTICAL PATHS — SPEC DEPTH -->
+      <div class="vertical-paths">
+        <!-- LEFT COLUMN -->
+        <section class="path-col network" id="sec-network">
+          <div class="sec-head">
+            <div class="sec-meta">
+              <div class="sec-title green">
+                NETWORK & INFRASTRUCTURE PENTEST
+              </div>
+            </div>
+            <div class="sec-actions">
+              <div class="badge" id="bdg-network">0 / 0</div>
+              <button class="add-btn" onclick="openModal('network')">
+                + ADD
+              </button>
+            </div>
+          </div>
+
+          <div class="prog-wrap">
+            <div class="prog-meta">
+              <span>COMPLETION_RATE</span><span id="pct-network">0%</span>
+            </div>
+            <div class="prog-track">
+              <div
+                class="prog-fill green"
+                id="bar-network"
+                style="width: 0%"
+              ></div>
+            </div>
+          </div>
+
+          <div class="cards-col" id="cards-network" aria-live="polite"></div>
+        </section>
+
+        <!-- RIGHT COLUMN -->
+        <section class="path-col web" id="sec-web">
+          <div class="sec-head">
+            <div class="sec-meta">
+              <div class="sec-title cyan">WEB & APPLICATION HACKING</div>
+            </div>
+            <div class="sec-actions">
+              <div class="badge" id="bdg-web">0 / 0</div>
+              <button class="add-btn cyan" onclick="openModal('web')">
+                + ADD
+              </button>
+            </div>
+          </div>
+
+          <div class="prog-wrap">
+            <div class="prog-meta">
+              <span>COMPLETION_RATE</span><span id="pct-web">0%</span>
+            </div>
+            <div class="prog-track">
+              <div class="prog-fill cyan" id="bar-web" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="cards-col" id="cards-web" aria-live="polite"></div>
+        </section>
+      </div>
+    </main>
+
+    <!-- ================================================================
+       MODAL INTERFACE
+       ================================================================ -->
+    <div
+      class="modal-bg hidden"
+      id="modal-bg"
+      onclick="handleBgClick(event)"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal">
+        <div class="modal-title" id="modal-heading">// PROMPT ITEM EDITOR</div>
+
+        <div class="f-group">
+          <label class="f-label" for="f-title">Skill / Node Target *</label>
+          <input
+            class="f-input"
+            id="f-title"
+            type="text"
+            placeholder="e.g. Active Directory — DCSync Attack Execution"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="120"
+          />
+        </div>
+
+        <div class="f-group">
+          <label class="f-label" for="f-priority"
+            >Execution Priority / Tag</label
+          >
+          <select class="f-select" id="f-priority">
+            <option value="high">HIGH</option>
+            <option value="medium" selected>MEDIUM</option>
+            <option value="low">LOW</option>
+          </select>
+        </div>
+
+        <div class="f-group">
+          <label class="f-label" for="f-link">Reference / URL</label>
+          <input
+            class="f-input"
+            id="f-link"
+            type="url"
+            placeholder="https://book.hacktricks.xyz/..."
+            autocomplete="off"
+            maxlength="500"
+          />
+        </div>
+
+        <div class="f-group">
+          <label class="f-label" for="f-notes">Notes / Summary</label>
+          <textarea
+            class="f-textarea"
+            id="f-notes"
+            placeholder="e.g. impacket-secretsdump -just-dc-ntlm LAB/administrator@10.10.10.x"
+            spellcheck="false"
+          ></textarea>
+        </div>
+
+        <div class="modal-foot">
+          <button class="btn btn-cancel" onclick="closeModal()">CANCEL</button>
+          <button class="btn btn-ok" id="btn-ok" onclick="submitCard()">
+            // COMMIT TO MATRIX
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================
+       JAVASCRIPT CORRECTIONS & CORE MATRIX v3.0 ENGINE
+       ================================================================ -->
+    <script>
+      "use strict";
+
+      // ── CONFIGURATION & CLOUD STORAGE INTERFACE ──
+      const SUPABASE_URL = "https://ryjvnlbucxgsiwfjhfes.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_dfvyxJmzsWGKWdXjLhYeVw_yHCr6tS0";
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      const STORE_KEY = "pentest-t-roadmap-v3";
+      let currentFilter = "all";
+      let searchQuery = "";
+      let activeSection = null;
+      let editingCardId = null;
+
+      const SEC_CFG = {
+        fundamentals: {
+          cards: "cards-fund",
+          badge: "bdg-fund",
+          bar: "bar-fund",
+          pct: "pct-fund",
+          theme: "green",
+          label: "CORE FUNDAMENTAL",
+        },
+        network: {
+          cards: "cards-network",
+          badge: "bdg-network",
+          bar: "bar-network",
+          pct: "pct-network",
+          theme: "green",
+          label: "NETWORK TOPIC",
+        },
+        web: {
+          cards: "cards-web",
+          badge: "bdg-web",
+          bar: "bar-web",
+          pct: "pct-web",
+          theme: "cyan",
+          label: "WEB PATH TOPIC",
+        },
+      };
+
+      function uid() {
+        return (
+          "_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7)
+        );
+      }
+
+      const DEFAULTS = {
+        fundamentals: [],
+        network: [],
+        web: [],
+      };
+
+      // بنبدأ بـ Matrix فاضية لحد ما تتحمل من السحابة
+      let state = JSON.parse(JSON.stringify(DEFAULTS));
+
+      // دالة جلب البيانات من Supabase أول ما الموقع يفتح
+      async function loadDataFromSupabase() {
+        try {
+          const { data, error } = await supabase
+            .from("roadmap_store")
+            .select("matrix_data")
+            .eq("id", 1)
+            .single();
+
+          if (error) throw error;
+
+          if (data && data.matrix_data) {
+            state = data.matrix_data;
+            renderAll();
+          }
+        } catch (e) {
+          console.warn(
+            "[SYSTEM] Supabase offline. Falling back to local buffer.",
+            e,
+          );
+          try {
+            const raw = localStorage.getItem(STORE_KEY);
+            if (raw) state = JSON.parse(raw);
+          } catch (err) {}
+          renderAll();
+        }
+      }
+
+      // دالة حفظ وتحديث البيانات في السحابة وقتي تلقائياً
+      async function saveData() {
+        try {
+          localStorage.setItem(STORE_KEY, JSON.stringify(state));
+        } catch (e) {}
+
+        try {
+          const { error } = await supabase
+            .from("roadmap_store")
+            .update({ matrix_data: state })
+            .eq("id", 1);
+          if (error) throw error;
+          console.log("[SYSTEM] Matrix synced successfully live.");
+        } catch (e) {
+          console.error("[SYSTEM] Supabase cloud sync failure.", e);
+        }
+      }
+
+      /* ── CRUD & MODAL OVERLAYS ── */
+
+      function openModal(section, cardId = null) {
+        activeSection = section;
+        editingCardId = cardId;
+        const cfg = SEC_CFG[section];
+
+        const headingEl = document.getElementById("modal-heading");
+        const okBtn = document.getElementById("btn-ok");
+        const titleIn = document.getElementById("f-title");
+        const prioIn = document.getElementById("f-priority");
+        const linkIn = document.getElementById("f-link");
+        const notesIn = document.getElementById("f-notes");
+
+        titleIn.classList.remove("err");
+
+        if (editingCardId) {
+          headingEl.textContent = `EDIT ${cfg.label}`;
+          okBtn.textContent = "// UPDATE VALUES";
+          const card = state[section].find((c) => c.id === cardId);
+          if (card) {
+            titleIn.value = card.title;
+            prioIn.value = card.priority || "medium";
+            linkIn.value = card.link || "";
+            notesIn.value = card.notes || "";
+          }
+        } else {
+          headingEl.textContent = `ADD ${cfg.label}`;
+          okBtn.textContent = "// COMMIT TO MATRIX";
+          titleIn.value = "";
+          prioIn.value = "medium";
+          linkIn.value = "";
+          notesIn.value = "";
+        }
+
+        document.getElementById("modal-bg").classList.remove("hidden");
+        setTimeout(() => titleIn.focus(), 60);
+      }
+
+      function closeModal() {
+        document.getElementById("modal-bg").classList.add("hidden");
+        activeSection = null;
+        editingCardId = null;
+      }
+
+      function handleBgClick(e) {
+        if (e.target === document.getElementById("modal-bg")) closeModal();
+      }
+
+      function submitCard() {
+        const titleEl = document.getElementById("f-title");
+        const title = titleEl.value.trim();
+        const priority = document.getElementById("f-priority").value;
+        const link = document.getElementById("f-link").value.trim();
+        const notes = document.getElementById("f-notes").value.trim();
+
+        if (!title) {
+          titleEl.classList.add("err");
+          titleEl.focus();
+          setTimeout(() => titleEl.classList.remove("err"), 600);
+          return;
+        }
+
+        if (editingCardId) {
+          const card = state[activeSection].find((c) => c.id === editingCardId);
+          if (card) {
+            Object.assign(card, { title, priority, link, notes });
+          }
+        } else {
+          state[activeSection].push({
+            id: uid(),
+            title,
+            priority,
+            link,
+            notes,
+            done: false,
+          });
+        }
+
+        saveData();
+        renderSection(activeSection);
+        syncStats();
+        closeModal();
+      }
+
+      function toggleDone(section, id, e) {
+        if (e) e.stopPropagation();
+        const card = state[section].find((c) => c.id === id);
+        if (!card) return;
+        card.done = !card.done;
+        saveData();
+
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.toggle("done", card.done);
+          el.querySelector(".card-chk").checked = card.done;
+          if (currentFilter !== "all")
+            setTimeout(() => renderSection(section), 250);
+        }
+        syncStats();
+      }
+
+      function deleteCard(section, id, e) {
+        if (e) e.stopPropagation();
+        state[section] = state[section].filter((c) => c.id !== id);
+        saveData();
+        renderSection(section);
+        syncStats();
+      }
+
+      /* ── OBSIDIAN / MARKDOWN SYNC MODULE ── */
+
+      function copyAsMarkdown(section, id, e) {
+        if (e) e.stopPropagation();
+        const card = state[section].find((c) => c.id === id);
+        if (!card) return;
+
+        const checkbox = card.done ? "- [x]" : "- [ ]";
+        let md = `${checkbox} **${card.title}** [Priority: ${card.priority.toUpperCase()}]\n`;
+        if (card.link) md += `  - **Reference:** ${card.link}\n`;
+        if (card.notes)
+          md += `  - **Commands/Notes:**\n    \`\`\`bash\n    ${card.notes.split("\n").join("\n    ")}\n    \`\`\`\n`;
+
+        navigator.clipboard
+          .writeText(md)
+          .then(() => {
+            const btn = document.querySelector(`#${id} .md-btn`);
+            if (btn) {
+              const originalText = btn.textContent;
+              btn.textContent = "[COPIED TO OBSIDIAN!]";
+              btn.style.color = "var(--g-hot)";
+              setTimeout(() => {
+                btn.textContent = originalText;
+                btn.style.color = "";
+              }, 1200);
+            }
+          })
+          .catch((err) => console.error("[SYSTEM] Clipboard API failed.", err));
+      }
+
+      /* ── SEARCH & FILTER ENGINES ── */
+
+      function handleSearch(val) {
+        searchQuery = val.toLowerCase().trim();
+        renderAll();
+      }
+
+      function filterMatrix(type) {
+        currentFilter = type;
+        document
+          .querySelectorAll(".filter-group .t-btn")
+          .forEach((b) => b.classList.remove("active"));
+        document.getElementById(`flt-${type}`).classList.add("active");
+        renderAll();
+      }
+
+      /* ── CORE RENDER PIPELINE ── */
+
+      function esc(str) {
+        const d = document.createElement("div");
+        d.textContent = str || "";
+        return d.innerHTML;
+      }
+
+      function buildCard(card, section) {
+        const theme = SEC_CFG[section].theme + "-t";
+        const done = card.done ? "done" : "";
+        const priorityClass = card.priority || "medium";
+
+        const linkHtml = card.link
+          ? `<a class="card-link" href="${esc(card.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">↗ Reference</a>`
+          : "";
+
+        const notesHtml = card.notes
+          ? `<div class="card-notes-preview">${esc(card.notes)}</div>`
+          : "";
+
+        return `
+        <div class="card ${theme} ${done}" id="${card.id}">
+          <div class="card-ops">
+            <button class="op-btn md-btn" onclick="copyAsMarkdown('${section}', '${card.id}', event)" title="Copy MD for Obsidian">[MD]</button>
+            <button class="op-btn edit-btn" onclick="openModal('${section}', '${card.id}')" title="Modify Node">[E]</button>
+            <button class="op-btn del-btn" onclick="deleteCard('${section}','${card.id}', event)">✕</button>
+          </div>
+          <div class="card-inner" onclick="openModal('${section}', '${card.id}')">
+            <div class="card-row">
+              <input type="checkbox" class="card-chk" ${card.done ? "checked" : ""}
+                onchange="toggleDone('${section}','${card.id}', event)" onclick="event.stopPropagation();">
+              <div class="card-text">
+                <div class="card-meta-line">
+                  <span class="p-pill ${priorityClass}">${priorityClass.toUpperCase()}</span>
+                </div>
+                <div class="card-title">${esc(card.title)}</div>
+                ${notesHtml}
+                ${linkHtml}
+              </div>
+            </div>
+          </div>
+        </div>`;
+      }
+
+      function renderSection(section) {
+        const cfg = SEC_CFG[section];
+        const container = document.getElementById(cfg.cards);
+        let cards = state[section];
+
+        if (!container) return;
+
+        if (currentFilter === "pending") cards = cards.filter((c) => !c.done);
+        else if (currentFilter === "done") cards = cards.filter((c) => c.done);
+
+        if (searchQuery) {
+          cards = cards.filter(
+            (c) =>
+              c.title.toLowerCase().includes(searchQuery) ||
+              (c.notes && c.notes.toLowerCase().includes(searchQuery)),
+          );
+        }
+
+        if (cards.length === 0) {
+          container.innerHTML = `<div class="empty">NO MATCHING NODES FOUND<span>// Index search or filter logic returned 0 results</span></div>`;
+          return;
+        }
+
+        container.innerHTML = cards.map((c) => buildCard(c, section)).join("");
+      }
+
+      function syncStats() {
+        const sections = ["fundamentals", "network", "web"];
+        let totalDone = 0,
+          totalAll = 0;
+
+        sections.forEach((section) => {
+          const cfg = SEC_CFG[section];
+          const cards = state[section];
+          const done = cards.filter((c) => c.done).length;
+          const all = cards.length;
+          const pct = all > 0 ? Math.round((done / all) * 100) : 0;
+
+          totalDone += done;
+          totalAll += all;
+          if (document.getElementById(cfg.badge))
+            document.getElementById(cfg.badge).textContent = `${done} / ${all}`;
+          if (document.getElementById(cfg.bar)) {
+            document.getElementById(cfg.bar).style.width = pct + "%";
+          }
+          if (document.getElementById(cfg.pct))
+            document.getElementById(cfg.pct).textContent = pct + "%";
+        });
+
+        const overallPct =
+          totalAll > 0 ? Math.round((totalDone / totalAll) * 100) : 0;
+        if (document.getElementById("nav-overall"))
+          document.getElementById("nav-overall").textContent =
+            `${totalDone}/${totalAll} NODES ACTIVE`;
+        if (document.getElementById("nav-pct"))
+          document.getElementById("nav-pct").textContent =
+            String(overallPct).padStart(2, "0") + "% COMPLETE";
+      }
+
+      function renderAll() {
+        ["fundamentals", "network", "web"].forEach((s) => renderSection(s));
+        syncStats();
+      }
+
+      /* ── SYSTEM EXPORT / PERSISTENCE PORTABILITY ── */
+
+      function exportData() {
+        const dataStr =
+          "data:text/json;charset=utf-8," +
+          encodeURIComponent(JSON.stringify(state, null, 2));
+        const anchor = document.createElement("a");
+        anchor.setAttribute("href", dataStr);
+        anchor.setAttribute(
+          "download",
+          `pentest_t_roadmap_matrix_${new Date().toISOString().slice(0, 10)}.json`,
+        );
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+      }
+
+      function triggerImport() {
+        document.getElementById("import-input").click();
+      }
+      function importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async function (evt) {
+          try {
+            const parsed = JSON.parse(evt.target.result);
+            if (parsed.fundamentals && parsed.network && parsed.web) {
+              state = parsed;
+              await saveData();
+              renderAll();
+              alert(
+                "[SUCCESS] Cryptographic parsing match complete. Matrix synced.",
+              );
+            } else {
+              alert("[ERROR] Malformed syntax schema.");
+            }
+          } catch (err) {
+            alert("[CRITICAL] JSON Parsing exception triggered.");
+          }
+        };
+        reader.readAsText(file);
+      }
+
+      async function resetSystem() {
+        if (
+          confirm(
+            "Are you sure you want to flush the local matrix database to defaults?",
+          )
+        ) {
+          state = JSON.parse(JSON.stringify(DEFAULTS));
+          await saveData();
+          renderAll();
+        }
+      }
+
+      document.addEventListener("keydown", (e) => {
+        const isOpen = !document
+          .getElementById("modal-bg")
+          .classList.contains("hidden");
+        if (e.key === "Escape" && isOpen) {
+          closeModal();
+          return;
+        }
+        if (
+          e.key === "Enter" &&
+          isOpen &&
+          document.activeElement.tagName !== "TEXTAREA"
+        ) {
+          e.preventDefault();
+          submitCard();
+        }
+      });
+
+      document.getElementById("nav-date").textContent = new Date()
+        .toISOString()
+        .slice(0, 10);
+
+      // تشغيل جلب البيانات السحابية فور تحميل الصفحة
+      loadDataFromSupabase();
+    </script>
+  </body>
+</html>
