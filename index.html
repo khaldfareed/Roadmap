@@ -1104,7 +1104,12 @@
       // ── CONFIGURATION & CLOUD STORAGE INTERFACE ──
       const SUPABASE_URL = "https://ryjvnlbucxgsiwfjhfes.supabase.co";
       const SUPABASE_KEY = "sb_publishable_dfvyxJmzsWGKWdXjLhYeVw_yHCr6tS0";
-      const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // غيرنا الاسم هنا لـ supabaseClient عشان نمنع الـ Conflict نهائياً
+      const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY,
+      );
 
       const STORE_KEY = "pentest-t-roadmap-v3";
       let currentFilter = "all";
@@ -1151,13 +1156,12 @@
         web: [],
       };
 
-      // بنبدأ بـ Matrix فاضية لحد ما تتحمل من السحابة
       let state = JSON.parse(JSON.stringify(DEFAULTS));
 
-      // دالة جلب البيانات من Supabase أول ما الموقع يفتح
+      // جلب البيانات السحابية
       async function loadDataFromSupabase() {
         try {
-          const { data, error } = await supabase
+          const { data, error } = await supabaseClient
             .from("roadmap_store")
             .select("matrix_data")
             .eq("id", 1)
@@ -1182,14 +1186,14 @@
         }
       }
 
-      // دالة حفظ وتحديث البيانات في السحابة وقتي تلقائياً
+      // حفظ البيانات سحابياً
       async function saveData() {
         try {
           localStorage.setItem(STORE_KEY, JSON.stringify(state));
         } catch (e) {}
 
         try {
-          const { error } = await supabase
+          const { error } = await supabaseClient
             .from("roadmap_store")
             .update({ matrix_data: state })
             .eq("id", 1);
@@ -1543,7 +1547,7 @@
         .toISOString()
         .slice(0, 10);
 
-      // تشغيل جلب البيانات السحابية فور تحميل الصفحة
+      // تشغيل المزامنة السحابية فوراً
       loadDataFromSupabase();
     </script>
   </body>
