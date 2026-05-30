@@ -228,12 +228,12 @@
         font-size: 11px;
         padding: 4px 10px 4px 24px;
         outline: none;
-        width: 200px;
+        width: 180px;
         transition: all 0.2s ease;
       }
       .search-input:focus {
         border-color: var(--g-mid);
-        width: 260px;
+        width: 240px;
         box-shadow: var(--glow-dim);
       }
       .search-icon {
@@ -264,6 +264,22 @@
         border-color: var(--p-high);
         color: #ff6666;
         background: rgba(255, 51, 51, 0.05);
+      }
+
+      /* ستايل قائمة التصفية للـ Tags */
+      .f-select-inline {
+        background: var(--bg-surface);
+        border: 1px solid var(--b-dim);
+        color: var(--g-hot);
+        font-family: var(--font);
+        font-size: 10px;
+        padding: 3px 8px;
+        outline: none;
+        cursor: pointer;
+      }
+      .f-select-inline option {
+        background: var(--bg-surface);
+        color: var(--t-bright);
       }
 
       /* =================================================================
@@ -578,7 +594,8 @@
         display: flex;
         gap: 6px;
         align-items: center;
-        margin-bottom: 3px;
+        margin-bottom: 5px;
+        flex-wrap: wrap;
       }
 
       /* Priority Pill */
@@ -603,6 +620,17 @@
         color: var(--p-low);
         border-color: rgba(0, 255, 51, 0.3);
         background: rgba(0, 255, 51, 0.05);
+      }
+
+      /* ستايل التاجز داخل الكارت */
+      .tag-badge {
+        font-size: 8px;
+        color: var(--g-mid);
+        border: 1px dashed var(--b-mid);
+        padding: 1px 5px;
+        background: rgba(0, 255, 51, 0.02);
+        text-transform: lowercase;
+        letter-spacing: 0.02em;
       }
 
       .card-title {
@@ -888,6 +916,17 @@
         <button class="t-btn" id="flt-done" onclick="filterMatrix('done')">
           COMPLETED
         </button>
+
+        <span class="filter-label" style="margin-left: 14px"
+          >// TAG FILTER:</span
+        >
+        <select
+          id="tag-matrix-filter"
+          class="f-select-inline"
+          onchange="handleTagFilter(this.value)"
+        >
+          <option value="all">ALL TAGS</option>
+        </select>
       </div>
 
       <div class="search-wrap">
@@ -1046,6 +1085,21 @@
         </div>
 
         <div class="f-group">
+          <label class="f-label" for="f-tags"
+            >Custom Tags (Separated by comma)</label
+          >
+          <input
+            class="f-input"
+            id="f-tags"
+            type="text"
+            placeholder="e.g. active-directory, privileged-escalation, credentials"
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="150"
+          />
+        </div>
+
+        <div class="f-group">
           <label class="f-label" for="f-link"
             >References / URLs (One per line)</label
           >
@@ -1091,6 +1145,7 @@
 
       const STORE_KEY = "pentest-t-roadmap-v3";
       let currentFilter = "all";
+      let activeTag = "all"; // لتخزين حالة فلترة التاج النشطة حالياً
       let searchQuery = "";
       let activeSection = null;
       let editingCardId = null;
@@ -1193,6 +1248,7 @@
         const okBtn = document.getElementById("btn-ok");
         const titleIn = document.getElementById("f-title");
         const prioIn = document.getElementById("f-priority");
+        const tagsIn = document.getElementById("f-tags");
         const linkIn = document.getElementById("f-link");
         const notesIn = document.getElementById("f-notes");
 
@@ -1206,11 +1262,13 @@
             titleIn.value = card.title;
             prioIn.value = card.priority || "medium";
 
-            // قراءة الروابط المتعددة من الكارت وفصلها بسطور جديدة داخل الـ Textarea
+            // تعبئة التاجز لو كانت متوفرة في النود
+            tagsIn.value = card.tags ? card.tags.join(", ") : "";
+
             if (card.links && Array.isArray(card.links)) {
               linkIn.value = card.links.join("\n");
             } else {
-              linkIn.value = card.link || ""; // التوافق مع الكروت القديمة ذات الرابط الفردي
+              linkIn.value = card.link || "";
             }
 
             notesIn.value = card.notes || "";
@@ -1220,6 +1278,7 @@
           okBtn.textContent = "// COMMIT TO MATRIX";
           titleIn.value = "";
           prioIn.value = "medium";
+          tagsIn.value = "";
           linkIn.value = "";
           notesIn.value = "";
         }
@@ -1242,6 +1301,7 @@
         const titleEl = document.getElementById("f-title");
         const title = titleEl.value.trim();
         const priority = document.getElementById("f-priority").value;
+        const tagsRaw = document.getElementById("f-tags").value;
         const linksRaw = document.getElementById("f-link").value;
         const notes = document.getElementById("f-notes").value.trim();
 
@@ -1252,7 +1312,12 @@
           return;
         }
 
-        // تقسيم اللينكات المدخلة سطر بسطر وتصفيتها من الفراغات
+        // تفكيك وتنظيف المصفوفة النصية للتاجر
+        const tags = tagsRaw
+          .split(",")
+          .map((t) => t.trim().toLowerCase())
+          .filter((t) => t.length > 0);
+
         const links = linksRaw
           .split("\n")
           .map((l) => l.trim())
@@ -1261,14 +1326,15 @@
         if (editingCardId) {
           const card = state[activeSection].find((c) => c.id === editingCardId);
           if (card) {
-            Object.assign(card, { title, priority, links, notes });
-            delete card.link; // مسح المتغير الفردي القديم لتوحيد الهيكل الجديد للـ JSON
+            Object.assign(card, { title, priority, tags, links, notes });
+            delete card.link;
           }
         } else {
           state[activeSection].push({
             id: uid(),
             title,
             priority,
+            tags,
             links,
             notes,
             done: false,
@@ -1278,6 +1344,7 @@
         saveData();
         renderSection(activeSection);
         syncStats();
+        updateTagFilterDropdown(); // تحديث القائمة المنسدلة للفلترة فوراً
         closeModal();
       }
 
@@ -1304,6 +1371,7 @@
         saveData();
         renderSection(section);
         syncStats();
+        updateTagFilterDropdown();
       }
 
       /* ── OBSIDIAN / MARKDOWN SYNC MODULE ── */
@@ -1313,7 +1381,6 @@
         const card = state[section].find((c) => c.id === id);
         if (!card) return;
 
-        // دعم مصفوفة الروابط المتعددة للنسخ في تطبيق أوبسيديان
         let linksArray = [];
         if (card.links && Array.isArray(card.links)) {
           linksArray = card.links;
@@ -1323,6 +1390,11 @@
 
         const checkbox = card.done ? "- [x]" : "- [ ]";
         let md = `${checkbox} **${card.title}** [Priority: ${card.priority.toUpperCase()}]\n`;
+
+        // تضمين التاجز في نسخ أوبسيديان
+        if (card.tags && card.tags.length > 0) {
+          md += `  - **Tags:** ${card.tags.map((t) => `#${t}`).join(" ")}\n`;
+        }
 
         if (linksArray.length > 0) {
           md += `  - **References:**\n`;
@@ -1367,6 +1439,43 @@
         renderAll();
       }
 
+      // معالج فلترة التاجز الجديد
+      function handleTagFilter(val) {
+        activeTag = val;
+        renderAll();
+      }
+
+      // بناء وتحديث قائمة التاجز المنسدلة ديناميكياً بناءً على المدخلات الحقيقية
+      function updateTagFilterDropdown() {
+        const dropdown = document.getElementById("tag-matrix-filter");
+        if (!dropdown) return;
+
+        const allTags = new Set();
+        ["fundamentals", "network", "web"].forEach((sec) => {
+          state[sec].forEach((card) => {
+            if (card.tags && Array.isArray(card.tags)) {
+              card.tags.forEach((t) => allTags.add(t));
+            }
+          });
+        });
+
+        const currentSelection = activeTag;
+        dropdown.innerHTML = '<option value="all">ALL TAGS</option>';
+
+        Array.from(allTags)
+          .sort()
+          .forEach((tag) => {
+            dropdown.innerHTML += `<option value="${esc(tag)}">#${esc(tag).toUpperCase()}</option>`;
+          });
+
+        if (allTags.has(currentSelection)) {
+          dropdown.value = currentSelection;
+        } else {
+          activeTag = "all";
+          dropdown.value = "all";
+        }
+      }
+
       /* ── CORE RENDER PIPELINE ── */
 
       function esc(str) {
@@ -1380,7 +1489,14 @@
         const done = card.done ? "done" : "";
         const priorityClass = card.priority || "medium";
 
-        // ميكانيزم قراءة مصفوفة الروابط المتعددة والتعامل مع الداتا القديمة
+        // معالجة التاجز وبناء البادجات المخصصة لكل كارت
+        let tagsHtml = "";
+        if (card.tags && Array.isArray(card.tags) && card.tags.length > 0) {
+          tagsHtml = card.tags
+            .map((t) => `<span class="tag-badge">#${esc(t)}</span>`)
+            .join(" ");
+        }
+
         let linksArray = [];
         if (card.links && Array.isArray(card.links)) {
           linksArray = card.links;
@@ -1388,7 +1504,6 @@
           linksArray = [card.link];
         }
 
-        // بناء لوحة الروابط داخل الكارت بشكل منسق مع استخراج الـ Domain Name تلقائياً
         let linksHtml = "";
         if (linksArray.length > 0) {
           linksHtml = `<div class="card-links-wrap" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">`;
@@ -1396,7 +1511,7 @@
             let displayLabel = `↗ Ref ${index + 1}`;
             try {
               const urlObj = new URL(urlStr);
-              displayLabel = `↗ ${urlObj.hostname.replace("www.", "")}`; // استخراج اسم الموقع تلقائياً
+              displayLabel = `↗ ${urlObj.hostname.replace("www.", "")}`;
             } catch (e) {}
 
             linksHtml += `<a class="card-link" href="${esc(urlStr)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" style="margin-top: 0;">${esc(displayLabel)}</a>`;
@@ -1422,6 +1537,7 @@
               <div class="card-text">
                 <div class="card-meta-line">
                   <span class="p-pill ${priorityClass}">${priorityClass.toUpperCase()}</span>
+                  ${tagsHtml}
                 </div>
                 <div class="card-title">${esc(card.title)}</div>
                 ${notesHtml}
@@ -1439,14 +1555,22 @@
 
         if (!container) return;
 
+        // فلترة 1: حسب حالة الإنجاز (Pending / Done)
         if (currentFilter === "pending") cards = cards.filter((c) => !c.done);
         else if (currentFilter === "done") cards = cards.filter((c) => c.done);
 
+        // فلترة 2: حسب الـ Tag المحدد من القائمة المنسدلة
+        if (activeTag !== "all") {
+          cards = cards.filter((c) => c.tags && c.tags.includes(activeTag));
+        }
+
+        // فلترة 3: حسب محرك البحث الفوري
         if (searchQuery) {
           cards = cards.filter(
             (c) =>
               c.title.toLowerCase().includes(searchQuery) ||
-              (c.notes && c.notes.toLowerCase().includes(searchQuery)),
+              (c.notes && c.notes.toLowerCase().includes(searchQuery)) ||
+              (c.tags && c.tags.some((t) => t.includes(searchQuery))),
           );
         }
 
@@ -1527,6 +1651,7 @@
               state = parsed;
               await saveData();
               renderAll();
+              updateTagFilterDropdown();
               alert(
                 "[SUCCESS] Cryptographic parsing match complete. Matrix synced.",
               );
@@ -1549,6 +1674,7 @@
           state = JSON.parse(JSON.stringify(DEFAULTS));
           await saveData();
           renderAll();
+          updateTagFilterDropdown();
         }
       }
 
@@ -1574,8 +1700,10 @@
         .toISOString()
         .slice(0, 10);
 
-      // تشغيل المزامنة السحابية فوراً وبأمان
-      loadDataFromSupabase();
+      // تشغيل واستدعاء المزامنة السحابية فوراً
+      loadDataFromSupabase().then(() => {
+        updateTagFilterDropdown(); // تحميل التاجز في القائمة لأول مرة بعد جلب البيانات
+      });
     </script>
   </body>
 </html>
