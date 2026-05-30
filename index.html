@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ROADMAP</title>
 
-    <!-- Monospace font: Fira Code for terminal aesthetic -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -860,9 +859,6 @@
     </style>
   </head>
   <body>
-    <!-- ================================================================
-       NAVBAR
-       ================================================================ -->
     <nav class="navbar">
       <div class="navbar-brand">
         <span class="brand-logo">◈ Roadmap (Web & Network)</span>
@@ -876,9 +872,6 @@
       </div>
     </nav>
 
-    <!-- ================================================================
-       THE CONTROLS TOOLBAR
-       ================================================================ -->
     <div class="toolbar">
       <div class="filter-group">
         <span class="filter-label">// VIEW:</span>
@@ -897,7 +890,6 @@
         </button>
       </div>
 
-      <!-- Live Search Engine Box -->
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input
@@ -925,11 +917,7 @@
       </div>
     </div>
 
-    <!-- ================================================================
-       MAIN T-LAYOUT
-       ================================================================ -->
     <main class="t-layout">
-      <!-- ① HORIZONTAL BAR — FUNDAMENTALS -->
       <section class="fundamentals" id="sec-fundamentals">
         <div class="sec-head">
           <div class="sec-meta">
@@ -955,7 +943,6 @@
         <div class="cards-row" id="cards-fund" aria-live="polite"></div>
       </section>
 
-      <!-- ② T-JUNCTION MECHANISM -->
       <div class="t-junction" aria-hidden="true">
         <div class="j-v-top"></div>
         <div class="j-h-arm"></div>
@@ -965,9 +952,7 @@
         <div class="j-dot j-dot-right"></div>
       </div>
 
-      <!-- ③ VERTICAL PATHS — SPEC DEPTH -->
       <div class="vertical-paths">
-        <!-- LEFT COLUMN -->
         <section class="path-col network" id="sec-network">
           <div class="sec-head">
             <div class="sec-meta">
@@ -999,7 +984,6 @@
           <div class="cards-col" id="cards-network" aria-live="polite"></div>
         </section>
 
-        <!-- RIGHT COLUMN -->
         <section class="path-col web" id="sec-web">
           <div class="sec-head">
             <div class="sec-meta">
@@ -1027,9 +1011,6 @@
       </div>
     </main>
 
-    <!-- ================================================================
-       MODAL INTERFACE
-       ================================================================ -->
     <div
       class="modal-bg hidden"
       id="modal-bg"
@@ -1065,15 +1046,16 @@
         </div>
 
         <div class="f-group">
-          <label class="f-label" for="f-link">Reference / URL</label>
-          <input
-            class="f-input"
+          <label class="f-label" for="f-link"
+            >References / URLs (One per line)</label
+          >
+          <textarea
+            class="f-textarea"
             id="f-link"
-            type="url"
-            placeholder="https://book.hacktricks.xyz/..."
-            autocomplete="off"
-            maxlength="500"
-          />
+            placeholder="https://book.hacktricks.xyz/&#10;https://github.com/..."
+            spellcheck="false"
+            style="height: 60px"
+          ></textarea>
         </div>
 
         <div class="f-group">
@@ -1095,9 +1077,6 @@
       </div>
     </div>
 
-    <!-- ================================================================
-       JAVASCRIPT CORRECTIONS & CORE MATRIX v3.0 ENGINE
-       ================================================================ -->
     <script>
       "use strict";
 
@@ -1105,7 +1084,6 @@
       const SUPABASE_URL = "https://ryjvnlbucxgsiwfjhfes.supabase.co";
       const SUPABASE_KEY = "sb_publishable_dfvyxJmzsWGKWdXjLhYeVw_yHCr6tS0";
 
-      // غيرنا الاسم هنا لـ supabaseClient عشان نمنع الـ Conflict نهائياً
       const supabaseClient = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_KEY,
@@ -1227,7 +1205,14 @@
           if (card) {
             titleIn.value = card.title;
             prioIn.value = card.priority || "medium";
-            linkIn.value = card.link || "";
+
+            // قراءة الروابط المتعددة من الكارت وفصلها بسطور جديدة داخل الـ Textarea
+            if (card.links && Array.isArray(card.links)) {
+              linkIn.value = card.links.join("\n");
+            } else {
+              linkIn.value = card.link || ""; // التوافق مع الكروت القديمة ذات الرابط الفردي
+            }
+
             notesIn.value = card.notes || "";
           }
         } else {
@@ -1257,7 +1242,7 @@
         const titleEl = document.getElementById("f-title");
         const title = titleEl.value.trim();
         const priority = document.getElementById("f-priority").value;
-        const link = document.getElementById("f-link").value.trim();
+        const linksRaw = document.getElementById("f-link").value;
         const notes = document.getElementById("f-notes").value.trim();
 
         if (!title) {
@@ -1267,17 +1252,24 @@
           return;
         }
 
+        // تقسيم اللينكات المدخلة سطر بسطر وتصفيتها من الفراغات
+        const links = linksRaw
+          .split("\n")
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0);
+
         if (editingCardId) {
           const card = state[activeSection].find((c) => c.id === editingCardId);
           if (card) {
-            Object.assign(card, { title, priority, link, notes });
+            Object.assign(card, { title, priority, links, notes });
+            delete card.link; // مسح المتغير الفردي القديم لتوحيد الهيكل الجديد للـ JSON
           }
         } else {
           state[activeSection].push({
             id: uid(),
             title,
             priority,
-            link,
+            links,
             notes,
             done: false,
           });
@@ -1321,9 +1313,24 @@
         const card = state[section].find((c) => c.id === id);
         if (!card) return;
 
+        // دعم مصفوفة الروابط المتعددة للنسخ في تطبيق أوبسيديان
+        let linksArray = [];
+        if (card.links && Array.isArray(card.links)) {
+          linksArray = card.links;
+        } else if (card.link) {
+          linksArray = [card.link];
+        }
+
         const checkbox = card.done ? "- [x]" : "- [ ]";
         let md = `${checkbox} **${card.title}** [Priority: ${card.priority.toUpperCase()}]\n`;
-        if (card.link) md += `  - **Reference:** ${card.link}\n`;
+
+        if (linksArray.length > 0) {
+          md += `  - **References:**\n`;
+          linksArray.forEach((l) => {
+            md += `    - ${l}\n`;
+          });
+        }
+
         if (card.notes)
           md += `  - **Commands/Notes:**\n    \`\`\`bash\n    ${card.notes.split("\n").join("\n    ")}\n    \`\`\`\n`;
 
@@ -1373,9 +1380,29 @@
         const done = card.done ? "done" : "";
         const priorityClass = card.priority || "medium";
 
-        const linkHtml = card.link
-          ? `<a class="card-link" href="${esc(card.link)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">↗ Reference</a>`
-          : "";
+        // ميكانيزم قراءة مصفوفة الروابط المتعددة والتعامل مع الداتا القديمة
+        let linksArray = [];
+        if (card.links && Array.isArray(card.links)) {
+          linksArray = card.links;
+        } else if (card.link) {
+          linksArray = [card.link];
+        }
+
+        // بناء لوحة الروابط داخل الكارت بشكل منسق مع استخراج الـ Domain Name تلقائياً
+        let linksHtml = "";
+        if (linksArray.length > 0) {
+          linksHtml = `<div class="card-links-wrap" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px;">`;
+          linksArray.forEach((urlStr, index) => {
+            let displayLabel = `↗ Ref ${index + 1}`;
+            try {
+              const urlObj = new URL(urlStr);
+              displayLabel = `↗ ${urlObj.hostname.replace("www.", "")}`; // استخراج اسم الموقع تلقائياً
+            } catch (e) {}
+
+            linksHtml += `<a class="card-link" href="${esc(urlStr)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();" style="margin-top: 0;">${esc(displayLabel)}</a>`;
+          });
+          linksHtml += `</div>`;
+        }
 
         const notesHtml = card.notes
           ? `<div class="card-notes-preview">${esc(card.notes)}</div>`
@@ -1398,7 +1425,7 @@
                 </div>
                 <div class="card-title">${esc(card.title)}</div>
                 ${notesHtml}
-                ${linkHtml}
+                ${linksHtml}
               </div>
             </div>
           </div>
@@ -1547,7 +1574,7 @@
         .toISOString()
         .slice(0, 10);
 
-      // تشغيل المزامنة السحابية فوراً
+      // تشغيل المزامنة السحابية فوراً وبأمان
       loadDataFromSupabase();
     </script>
   </body>
